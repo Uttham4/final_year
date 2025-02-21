@@ -1,0 +1,288 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Inventory</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <style>
+        .loader-container {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(17, 24, 39, 0.75);
+            z-index: 50;
+        }
+    
+        .spinner {
+            position: relative;
+            width: 160px;
+            height: 160px;
+        }
+    
+        .circle {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            animation: spin 3s linear infinite;
+        }
+    
+        .circle::before,
+        .circle::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+    
+        .circle::before {
+            top: 0;
+            background: #8B5CF6;
+        }
+    
+        .circle::after {
+            bottom: 0;
+            background: #3B82F6;
+        }
+    
+        .line {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to bottom, #8B5CF6, transparent, #3B82F6);
+            opacity: 0.3;
+        }
+    
+        .core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px;
+            height: 32px;
+        }
+    
+        .core::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: white;
+            opacity: 0.2;
+            animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+    
+        .core::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: white;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    
+        @keyframes pulse {
+            50% {
+                opacity: 0.5;
+            }
+        }
+    
+        @keyframes ping {
+    
+            75%,
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+    
+        /* Create 8 spinning circles with delays */
+        .circle:nth-child(1) {
+            animation-delay: 0s;
+        }
+    
+        .circle:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+    
+        .circle:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+    
+        .circle:nth-child(4) {
+            animation-delay: 0.6s;
+        }
+    
+        .circle:nth-child(5) {
+            animation-delay: 0.8s;
+        }
+    
+        .circle:nth-child(6) {
+            animation-delay: 1s;
+        }
+    
+        .circle:nth-child(7) {
+            animation-delay: 1.2s;
+        }
+    
+        .circle:nth-child(8) {
+            animation-delay: 1.4s;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-gradient-to-br from-blue-500 to-teal-400 min-h-screen flex flex-col justify-center items-center font-sans text-white">
+    <nav class="bg-black bg-opacity-75 w-full fixed top-0 left-0 right-0 z-50 shadow-lg">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="/frontend/index.html" class="text-xl font-bold no-underline">Student Portal</a>
+            <div class="flex space-x-4">
+                <button
+                    class="bg-transparent hover:bg-blue-500 text-white font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded"
+                    onclick="home()">
+                    <i class="fas fa-home"></i> Home
+                </button>
+                <button
+                    id="add-student"
+                    class="hidden bg-transparent hover:bg-blue-500 text-white font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded"
+                    onclick="addStudent()">
+                    <i class="fas fa-user-plus"></i> Student
+                </button>
+                <button id="add-user"
+                    class="hidden bg-transparent hover:bg-blue-500 text-white font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded"
+                    onclick="addUser()">
+                    <i class="fas fa-user-plus"></i> User
+                </button>
+                <button id="inventory"
+                    class="hidden bg-transparent hover:bg-blue-500 text-white font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded"
+                    onclick="inventory()">
+                    <i class="fas fa-warehouse"></i> Inventory
+                </button>
+                <button
+                    class="bg-transparent hover:bg-blue-500 text-white font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded"
+                    onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Loader -->
+    <div id="loader" class="hidden fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-50">
+        <div class="loader-container">
+            <div class="spinner">
+                <div class="circle">
+                    <div class="line"></div>
+                </div>
+                <div class="circle">
+                    <div class="line"></div>
+                </div>
+                <div class="circle">
+                    <div class="line"></div>
+                </div>
+                <div class="circle">
+                    <div class="line"></div>
+                </div>
+                <div class="circle">
+                    <div class="line"></div>
+                </div>
+                <div class="circle">
+                    <div class="line"></div>
+                </div>
+                <div class="circle">
+                    <div class="line"></div>
+                </div>
+                <div class="circle">
+                    <div class="line"></div>
+                </div>
+                <div class="core"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="container mx-auto mt-20">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold">Available Inventory</h1>
+        </div>
+        <div class="bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
+            <table class="w-full text-left table-auto">
+                <thead>
+                    <tr class="bg-gray-200 text-gray-700">
+                        <th class="py-2 px-4">Item ID</th>
+                        <th class="py-2 px-4">Item Name</th>
+                        <th class="py-2 px-4">Quantity</th>
+                        <th class="py-2 px-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="inventory-list" class="text-gray-700 bg-white">
+                    <!-- Inventory items will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            // fetchInventory();
+        });
+
+        function fetchInventory() {
+            $.ajax({
+                url: "https://4n87vpnms5.execute-api.us-east-2.amazonaws.com/prod/inventory", // Replace with actual API endpoint
+                method: "GET",
+                success: function (data) {
+                    let inventoryTable = "";
+                    data.forEach(item => {
+                        inventoryTable += `
+                            <tr class="border-b">
+                                <td class="py-2 px-4">${item.id}</td>
+                                <td class="py-2 px-4">${item.name}</td>
+                                <td class="py-2 px-4">${item.quantity}</td>
+                                <td class="py-2 px-4">
+                                    <button class="bg-green-500 text-white px-4 py-1 rounded" onclick="requestItem(${item.id})">Request</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    $("#inventory-list").html(inventoryTable);
+                },
+                error: function () {
+                    Swal.fire("Error", "Failed to load inventory.", "error");
+                }
+            });
+        }
+
+        function requestItem(itemId) {
+            Swal.fire("Requested", "Item request submitted.", "success");
+        }
+    </script>
+    <script src="/frontend/js/utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
+</body>
+
+</html>
