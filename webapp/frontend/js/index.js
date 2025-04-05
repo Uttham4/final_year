@@ -1,47 +1,73 @@
+const saveStudentIdToLocalStorage = () => {
+    const studentId = document.getElementById("student-id").value;
+    localStorage.setItem("currentStudentID", studentId);
+}
+
+
+
 $('#student-form').submit(function (event) {
     event.preventDefault();
     showLoader();
     const studentId = $('#student-id').val();
-    const backendUrl = "https://4n87vpnms5.execute-api.us-east-2.amazonaws.com/prod";
-
     $.ajax({
-        url: `${backendUrl}/student`,
+        url: `${backendUrl}/students/student_details`,
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({ id: studentId }),
         success: function (response) {
             console.log(response);
             hideLoader();
-            if (response.message === "paid") {
-                Swal.fire({
-                    title: 'Student Paid Today',
-                    text: "Student has already paid!",
-                    icon: 'info',
-                    confirmButtonText: 'OK',
-                    backdrop: true,
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Make API call when OK is clicked
-                        fetch(`${backendUrl}/mark-paid`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ id: studentId })
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                console.log('API Response:', data);
-                            })
-                            .catch(error => {
-                                console.error('Error:', error);
-                            });
-                    }
-                });
-                makeControlServoRequest(180);
+            try {
+                
+                if (response.message === "paid") {
+                    console.log("paid");
+                    console.log("Before Swal.fire");
 
-                return;
+                    // Show Swal alert
+                    Swal.fire({
+                        title: 'Student Paid Today',
+                        text: `Student has already paid for menu: ${Object.keys(JSON.parse(response.menu)).join(", ")}`,
+                        icon: 'info',
+                        showConfirmButton: true,
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                    }).then((result) => {
+                        console.log("Swal result:", result);
+
+                        if (result.isConfirmed) {
+                            console.log("User clicked OK, calling API...");
+
+                            // Call API first
+                            fetch(`${backendUrl}/payments/update_paid_status`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ id: studentId })
+                            })
+                                .then(response => response.json())
+                                .then(data => {
+                                    console.log('API Response:', data);
+
+                                    // Now call makeControlServoRequest only after API response
+                                    makeControlServoRequest();
+                                })
+                                .catch(error => console.error('Fetch Error:', error));
+                        } else {
+                            console.log("Swal closed without confirmation.");
+                        }
+                    });
+
+                    console.log("After Swal.fire call in main thread");
+                    return
+                }
+
+            } catch {
+                (error => {
+                    console.log("error", error);
+                })
             }
+
 
             if (response.message === "Already marked today") {
                 Swal.fire({
@@ -51,13 +77,13 @@ $('#student-form').submit(function (event) {
                     confirmButtonText: 'OK',
                     backdrop: true,
                 }).then((result) => {
-                    if (result.isConfirmed) {
-                        makeControlServoRequest(180);
-                    }
+                    console.log("Student marked for today!");
                 });
 
                 return;
             }
+            
+
             if (Array.isArray(response) && response.length > 0) {
                 const data = response[0];
 
@@ -73,7 +99,7 @@ $('#student-form').submit(function (event) {
                 $('#address').text(data.address ?? 'N/A');
                 $('#contact_number').text(data.contact_number ?? 'N/A');
                 $('#email').text(data.email ?? 'N/A');
-                $('#student-image').attr('src', data.image ?? 'placeholder.png');
+                $('#student-image').attr('src', '../backend/local_backend/' + data.image ?? '');
                 $('#history').text(data.history ?? 'No history available.');
 
                 $('#student-info').fadeIn();
@@ -88,6 +114,7 @@ $('#student-form').submit(function (event) {
                 } else {
                     console.log("payment visible");
                     $('#payment-section').fadeOut();
+                    makeControlServoRequest();
                 }
             } else {
                 // hideLoader();
@@ -105,7 +132,7 @@ $('#student-form').submit(function (event) {
             hideLoader();
             Swal.fire({
                 title: 'Failed!',
-                text: 'Student not found!',
+                text: 'Error fetching student data!',
                 icon: 'error',
                 confirmButtonText: 'OK',
                 backdrop: true,
@@ -114,57 +141,64 @@ $('#student-form').submit(function (event) {
     });
 });
 
+const makeControlServoRequest = () => {
+    fetch("http://192.168.188.104/control_servo?status=open", {
+        method: "GET"
+    })
+        .then(response => response.text()) // Get the plain text response
+        .then(data => {
+            console.log("Response from ESP32:", data);
 
-const makeControlServoRequest = (degree) => {
-    const payload = {
-        "servo_degree": degree
-    };
-
-    Swal.fire({
-        title: degree === 180 ? 'Take the Plate' : 'Close the Door',
-        text: degree === 180 ? 'Please take the plate!' : 'Please close the door!',
-        icon: 'info',
-        showConfirmButton: true,
-    }).then(() => {
-        // Make the control_servo POST request
-        fetch('http://18.218.182.119:5000/control_servo', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload)
-        })
-            .then(response => {
-                console.log(response);
-                // Check if the response is a text response
-                if (response.ok) {
-                    return response.text();  // Parse as plain text
-                } else {
-                    throw new Error(`HTTP Error: ${response.status}`);
-                }
-            })
-            .then(data => {
-                // Log the response as plain text (it's not JSON)
-                console.log('Servo control successful:', data);
-
-                // After the first request (180 degrees), wait for 5 seconds, then do the second request (90 degrees)
-                if (degree === 180) {
-                    setTimeout(() => {
-                        makeControlServoRequest(0);  // Call with 90 degrees after 5 seconds
-                    }, 5000);  // 5-second delay between requests
-                }
-            })
-            .catch(error => {
-                console.error('Error controlling servo:', error);
-                Swal.fire({
-                    title: 'Failed!',
-                    text: 'Error controlling the servo!',
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                    backdrop: true,
+            if (data == "No object detected within 5 seconds") {
+                return Swal.fire({
+                    title: 'Plate not detected!',
+                    text: 'Please contact help, No plate detected!',
+                    icon: 'warning',
+                    showConfirmButton: true,
+                }).then(() => {
+                    console.log("Plate not detected");
                 });
+            }
+
+            // Show success message
+            Swal.fire({
+                title: 'Take the Plate',
+                text: 'Please take the plate!',
+                icon: 'info',
+                showConfirmButton: true,
             });
-    });
+
+            // Proceed with student update
+            return fetch(`${backendUrl}/students/update_today`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: localStorage.getItem('currentStudentID') })
+            });
+
+        })
+        .then(response => {
+            if (!response || !response.ok) {  // Ensure response is valid before using it
+                throw new Error(`HTTP Error: ${response ? response.status : 'Unknown'}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Student update successful:', data);
+            localStorage.removeItem("currentStudentID");
+            localStorage.removeItem("totalCost");
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                title: 'Failed!',
+                text: error.message || 'Error occurred!',
+                icon: 'error',
+                confirmButtonText: 'OK',
+                backdrop: true,
+            });
+        });
 };
 
 
@@ -183,14 +217,16 @@ document.getElementById('pay-btn').onclick = function () {
         return;
     }
 
+
+
     // Create order first
-    fetch('http://18.218.182.119:5000/create_order', {
+    fetch(`${backendUrl}/payments/create_order`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            amount: 100,  // amount in paise
+            amount: (localStorage.getItem("totalCost") > 0) ? localStorage.getItem("totalCost") : localStorage.getItem("currentMenuTotalCost"),
             currency: 'INR',
             student_id: studentId  // Include student ID in order creation
         })
@@ -208,9 +244,9 @@ document.getElementById('pay-btn').onclick = function () {
 
             const options = {
                 key: "rzp_test_L3zRDHReH9Csk5",
-                amount: "100",
+                amount :(localStorage.getItem("totalCost") > 0) ? localStorage.getItem("totalCost") : localStorage.getItem("currentMenuTotalCost"),
                 currency: "INR",
-                name: "Your Company",
+                name: "Rit",
                 description: "Test Transaction",
                 order_id: orderData.id,  // Set order ID received from server
                 handler: function (response) {
@@ -220,7 +256,7 @@ document.getElementById('pay-btn').onclick = function () {
                         throw new Error('Missing required Razorpay parameters');
                     }
 
-                    return fetch('http://18.218.182.119:5000/verify_payment', {
+                    return fetch(`${backendUrl}/payments/verify_payment`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -245,13 +281,15 @@ document.getElementById('pay-btn').onclick = function () {
                                 });
 
                                 // Make a POST request to the /paid route
-                                return fetch(`${backendUrl}/paid`, {
+                                return fetch(`${backendUrl}/payments/payment_handler`, {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
                                     },
                                     body: JSON.stringify({
-                                        student_id: studentId
+                                        student_id: studentId,
+                                        menu: localStorage.getItem(`menu_${localStorage.getItem("currentStudentID")}`) || localStorage.getItem('currentMenu'),
+                                        amount: (localStorage.getItem("totalCost") > 0) ? localStorage.getItem("totalCost") : localStorage.getItem("currentMenuTotalCost"),
                                     })
                                 });
                             } else {
@@ -261,7 +299,7 @@ document.getElementById('pay-btn').onclick = function () {
                         .then(response => response.json())
                         .then(paidData => {
                             console.log('Paid route response:', paidData);
-                            makeControlServoRequest(180);
+                            makeControlServoRequest();
                         });
                 },
                 prefill: {
@@ -292,14 +330,12 @@ document.getElementById('pay-btn').onclick = function () {
 
 
 document.getElementById('count-btn').addEventListener('click', function (event) {
-    event.preventDefault();  // Prevent the button's default behavior (e.g., form submission)
-    const apiUrl = 'https://4n87vpnms5.execute-api.us-east-2.amazonaws.com/prod';  // Replace with your actual API URL
+    event.preventDefault();
 
-    // Make the API call (using fetch in this example)
-    fetch(`${apiUrl}/count`, {
+    fetch(`${backendUrl}/students/count_student`, {
         method: 'GET',  // Use GET method
         headers: {
-            'Content-Type': 'application/json',  // Still including this, even though it's not strictly required for GET
+            'Content-Type': 'application/json',
         }
     })
         .then(response => response.json())
@@ -307,10 +343,10 @@ document.getElementById('count-btn').addEventListener('click', function (event) 
             console.log('API response:', data);
 
             if (data) {
-                // Update UI with the count result (this can be customized as needed)
+
                 Swal.fire({
                     title: 'Count Retrieved!',
-                    text: `The count of students eating today is: ${data.count}`,
+                    text: `The count of students eating today is: ${data.total_count} and count of hosteller : ${data.hosteller_count} and count of day scholer ${data.day_scholar_count}`,
                     icon: 'info',
                     confirmButtonText: 'OK',
                     backdrop: true,
@@ -338,17 +374,25 @@ document.getElementById('count-btn').addEventListener('click', function (event) 
         });
 });
 
-
 $(document).ready(function () {
+    let studentID = localStorage.getItem("currentStudentID");
+    let form = document.getElementById("student-form");
+
+    if (form) { // Ensure the form exists
+        document.getElementById("student-id").value = studentID;
+        form.requestSubmit();
+    } else {
+        console.error("Form with ID 'submit-form' not found.");
+    }
+
     const element1 = document.getElementById("count-btn");
     const admin = localStorage.getItem('admin');
+
     console.log("admin", admin);
 
-
-
-    // Show for admin="1"
     if (admin === "1") {
         console.log("admin");
         element1?.classList.remove("hidden");
     }
 });
+

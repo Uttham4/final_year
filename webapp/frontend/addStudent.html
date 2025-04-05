@@ -160,13 +160,12 @@
         <div class="container mx-auto px-6 py-3 flex justify-between items-center">
             <a href="/frontend/index.html" class="text-xl font-bold no-underline">Student Portal</a>
             <div class="flex space-x-4">
-                <button
+                <button id="menu-nav"
                     class="bg-transparent hover:bg-blue-500 text-white font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded"
-                    onclick="home()">
-                    <i class="fas fa-home"></i> Home
+                    onclick="menu()">
+                    <i class="fas fa-utensils"></i> Menu
                 </button>
-                <button
-                    id="add-student"
+                <button id="add-student"
                     class="hidden bg-transparent hover:bg-blue-500 text-white font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded"
                     onclick="addStudent()">
                     <i class="fas fa-user-plus"></i> Student
@@ -186,6 +185,10 @@
                     onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
+                <div id="current-date" class="text-white flex items-center">
+                    <i class="fas fa-calendar-alt mr-2"></i>
+                    <span id="date-text"></span>
+                </div>
             </div>
         </div>
     </nav>
@@ -263,11 +266,59 @@
                         <option value="Hosteller">Hosteller</option>
                     </select>
                 </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="year">Academic Year:</label>
+                    <input type="number" id="year" name="year" min="1"
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                        required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="semester">Semester:</label>
+                    <input type="number" id="semester" name="semester" min="1" max="8"
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                        required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="department">Department:</label>
+                    <select id="department" name="department"
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                        required>
+                        <option value="">Select Department</option>
+                        <option value="CSE">CSE</option>
+                        <option value="ECE">ECE</option>
+                        <option value="EEE">EEE</option>
+                        <option value="ME">ME</option>
+                        <option value="CE">CE</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="section">Section:</label>
+                    <select id="section" name="section"
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                        required>
+                        <option value="">Select Section</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="age">Age:</label>
+                    <input type="number" id="age" name="age" min="16" max="100"
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                        required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="image">Upload Image:</label>
+                    <input type="file" id="image" name="image" accept="image/*"
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700">
+                </div>
                 <button type="submit"
                     class="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
                     Add Student
                 </button>
             </form>
+
         </div>
     </div>
 

@@ -1,20 +1,21 @@
-#include <ESP32Servo.h>
 #include <WiFi.h>
 #include <WebServer.h>
 
-// Servo setup
-Servo servo1;
-int servo1Pin = 18; // Pin connected to the servo signal wire
+#define motor_pin 14
+int ir = 13;  // IR sensor pin
 
 // WiFi credentials
-const char* ssid = "vivo V21e 5G";
-const char* password = "12345678";
+const char* ssid = "Prathish";
+const char* password = "Prathish1";
 
 // Create web server instance
 WebServer server(80);
 
 void setup() {
   Serial.begin(115200);
+  pinMode(ir, INPUT);
+  pinMode(motor_pin, OUTPUT);
+  digitalWrite(motor_pin, HIGH);  // Set motor OFF initially
 
   // Connect to WiFi
   WiFi.begin(ssid, password);
@@ -26,13 +27,8 @@ void setup() {
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
-  // Attach the servo
-  servo1.attach(servo1Pin);
-
   // Define the `/control_servo` route
   server.on("/control_servo", handleServoControl);
-
-  // Start the server
   server.begin();
   Serial.println("Server started");
 }
@@ -45,15 +41,37 @@ void handleServoControl() {
   if (server.hasArg("status")) {
     String status = server.arg("status");
 
+    // Enable CORS
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS"); 
+    server.sendHeader("Access-Control-Allow-Headers", "*");
+
     if (status == "open") {
-      // Move the servo to 180 degrees
-      servo1.write(180);
-      delay(5000); // Keep the servo open for 5 seconds
+      Serial.println("Motor ON");
+      digitalWrite(motor_pin, LOW);  // Activate motor (LOW if relay is active LOW)
+      delay(1700);
+      digitalWrite(motor_pin, HIGH); // Turn motor OFF
+      Serial.println("Motor OFF");
 
-      // Move the servo back to 0 degrees
-      servo1.write(0);
+      // Wait for IR sensor to detect an object (Non-blocking)
+      unsigned long startTime = millis();
+      bool objectDetected = false;
 
-      server.send(200, "text/plain", "Servo moved to 180 and back to 0");
+      while (millis() - startTime < 5000) {  // Wait max 5 seconds
+        if (digitalRead(ir) == LOW) {  // IR detects object
+          Serial.println("LOW - Object Detected");
+          objectDetected = true;
+          break;
+        }
+        delay(100);
+      }
+
+      if (objectDetected) {
+        server.send(200, "text/plain", "Plate dispensed");
+      } else {
+        server.send(408, "text/plain", "No object detected within 5 seconds");
+      }
+
     } else {
       server.send(400, "text/plain", "Invalid status parameter");
     }

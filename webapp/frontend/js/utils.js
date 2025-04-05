@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-var backendUrl = "https://4n87vpnms5.execute-api.us-east-2.amazonaws.com/prod";
+var backendUrl = "http://127.0.0.1:5000";
 
 const addStudent = () => {
     window.location.href = 'addStudent.html';
@@ -52,6 +52,9 @@ const home = () => {
     window.location.href = 'index.html';
 }
 
+const menu = () => {
+    window.location.href = 'menu.html';
+}
 const addUser = () => {
     window.location.href = 'addUser.html';
 }
@@ -88,3 +91,19 @@ $(document).ready(function () {
 });
 function showLoader() { document.getElementById('loader').classList.remove('hidden'); }
 function hideLoader() { document.getElementById('loader').classList.add('hidden'); }
+
+
+const setCurrentDate = () => {
+    const dateElement = document.getElementById("date-text");
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+    dateElement.textContent = formattedDate;
+}
+
+// Call the function when the page loads
+window.onload = setCurrentDate;

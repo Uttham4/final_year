@@ -6,10 +6,10 @@ document.getElementById('login-form').addEventListener('submit', async function 
 
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
-    const backendUrl = "https://4n87vpnms5.execute-api.us-east-2.amazonaws.com/prod";
+    const backendUrl = "http://127.0.0.1:5000";
 
     try {
-        const response = await fetch(`${backendUrl}/login`, {
+        const response = await fetch(`${backendUrl}/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

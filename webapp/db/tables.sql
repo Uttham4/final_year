@@ -32,8 +32,10 @@ CREATE TABLE student_details (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Record creation time
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Record last update time
     today BOOLEAN DEFAULT FALSE, -- Indicates if the student is present today
+    paid BOOLEAN DEFAULT FALSE, -- Indicates if the student is present today
     not_available_from DATE, -- Start date for unavailability
-    not_available_to DATE -- End date for unavailability
+    not_available_to DATE, -- End date for unavailability
+    last_menu jSON
 );
 
 
@@ -41,11 +43,10 @@ DELIMITER $$
 
 CREATE EVENT reset_student_details
 ON SCHEDULE EVERY 1 DAY
-STARTS (TIMESTAMP(CURDATE() + INTERVAL 1 DAY))
 DO
 BEGIN
     UPDATE datadb.student_details
-    SET paid = FALSE, today = 0;
+    SET paid = FALSE, today = FALSE,last_menu=None;
 END$$
 
 DELIMITER ;
@@ -83,8 +84,8 @@ INSERT INTO student_details (
     not_available_from,
     not_available_to
 ) VALUES (
-    'CS202301',                  -- roll_num
-    'REG202301',                 -- reg_num
+    '202102100',                  -- roll_num
+    '211721106100',                 -- reg_num
     2023,                        -- year
     1,                           -- semester
     'Computer Science',          -- department
@@ -98,10 +99,26 @@ INSERT INTO student_details (
     'john.doe@example.com',      -- email
     '123 Main St, Springfield',  -- address
     'Jane Doe',                  -- guardian_name
-    '0987654321',                -- guardian_contact
+    '987654321',                -- guardian_contact
     'https://example.com/image.jpg', -- image
     'No history available.',     -- history
     FALSE,                       -- today (initially set to FALSE)
     '2024-12-25',                -- not_available_from (e.g., start date of unavailability)
     '2024-12-31'                 -- not_available_to (e.g., end date of unavailability)
 );
+
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    admin BOOLEAN DEFAULT FALSE,
+    status ENUM('active', 'inactive', 'banned') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+
+
+UPDATE student_details 
+SET paid = 0, today = 0;

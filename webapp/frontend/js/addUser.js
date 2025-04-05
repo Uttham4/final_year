@@ -8,10 +8,9 @@ $('#add-user-form').submit(function (event) {
         admin: $('#admin').val() === 'true'
     };
 
-    const backendUrl = "https://4n87vpnms5.execute-api.us-east-2.amazonaws.com/prod";
 
     $.ajax({
-        url: `${backendUrl}/add-users`,
+        url: `${backendUrl}/users/add_user`,
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(userData),
