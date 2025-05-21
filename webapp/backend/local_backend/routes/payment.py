@@ -53,8 +53,8 @@ logger = logging.getLogger(__name__)
 
 
 # Razorpay client configuration
-KEY_ID = 'rzp_test_L3zRDHReH9Csk5'
-KEY_SECRET = 'XJiNYd1BDWwhBdFKJ8axV6I8'
+KEY_ID = ''
+KEY_SECRET = ''
 client = Client(auth=(KEY_ID, KEY_SECRET))
 
 

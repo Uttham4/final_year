@@ -142,7 +142,7 @@ $('#student-form').submit(function (event) {
 });
 
 const makeControlServoRequest = () => {
-    fetch("http://192.168.188.104/control_servo?status=open", {
+    fetch("http://192.168.216.104/control_servo?status=open", {
         method: "GET"
     })
         .then(response => response.text()) // Get the plain text response
